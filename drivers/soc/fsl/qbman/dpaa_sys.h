@@ -38,7 +38,9 @@
 #include <linux/of_irq.h>
 #include <linux/of_reserved_mem.h>
 #include <linux/kthread.h>
+#include <linux/uaccess.h>
 #include <linux/debugfs.h>
+#include <linux/vmalloc.h>
 #include <linux/platform_device.h>
 #include <linux/ctype.h>
 

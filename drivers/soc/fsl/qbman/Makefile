@@ -17,3 +17,4 @@ obj-$(CONFIG_FSL_QMAN_TEST)			+= qman-test.o
 qman-test-y					 = qman_test.o
 qman-test-$(CONFIG_FSL_QMAN_TEST_API)		+= qman_test_api.o
 qman-test-$(CONFIG_FSL_QMAN_TEST_STASH)		+= qman_test_stash.o
+obj-$(CONFIG_FSL_QMAN_DEBUGFS)			+= qman-debugfs.o

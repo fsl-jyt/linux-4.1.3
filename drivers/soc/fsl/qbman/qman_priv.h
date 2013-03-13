@@ -156,6 +156,14 @@ struct qman_portal *qman_create_affine_slave(struct qman_portal *redirect,
 const struct qm_portal_config *qman_destroy_affine_portal(void);
 void qman_destroy_portal(struct qman_portal *qm);
 
+/* This CGR feature is supported by h/w and required by unit-tests and the
+ * debugfs hooks, so is implemented in the driver. However it allows an explicit
+ * corruption of h/w fields by s/w that are usually incorruptible (because the
+ * counters are usually maintained entirely within h/w). As such, we declare
+ * this API internally. */
+int qman_testwrite_cgr(struct qman_cgr *cgr, u64 i_bcnt,
+	struct qm_mcr_cgrtestwrite *result);
+
 #ifdef CONFIG_FSL_QMAN_FQ_LOOKUP
 /* If the fq object pointer is greater than the size of context_b field,
  * than a lookup table is required. */
