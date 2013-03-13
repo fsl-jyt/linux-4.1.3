@@ -165,11 +165,11 @@ static struct bman *bm_create(void *regs)
 
 static inline u32 __bm_in(struct bman *bm, u32 offset)
 {
-	return in_be32((void *)bm + offset);
+	return ioread32be((void *)bm + offset);
 }
 static inline void __bm_out(struct bman *bm, u32 offset, u32 val)
 {
-	out_be32((void *)bm + offset, val);
+	iowrite32be(val, (void*) bm + offset);
 }
 #define bm_in(reg)		__bm_in(bm, REG_##reg)
 #define bm_out(reg, val)	__bm_out(bm, REG_##reg, val)
@@ -341,6 +341,7 @@ u32 bm_pool_free_buffers(u32 bpid)
 {
 	return bm_in(POOL_CONTENT(bpid));
 }
+EXPORT_SYMBOL(bm_pool_free_buffers);
 
 static ssize_t show_fbpr_fpc(struct device *dev,
 	struct device_attribute *dev_attr, char *buf)

@@ -22,4 +22,10 @@ config FSL_BMAN
 	help
 		FSL DPAA BMan driver
 
+config FSL_BMAN_PORTAL
+	tristate "BMan portal(s)"
+	default n
+	help
+		FSL BMan portal driver
+
 endif # FSL_DPA
