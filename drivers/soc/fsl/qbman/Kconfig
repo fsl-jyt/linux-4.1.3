@@ -28,6 +28,32 @@ config FSL_BMAN_PORTAL
 	help
 		FSL BMan portal driver
 
+config FSL_BMAN_TEST
+	tristate "BMan self-tests"
+	default n
+	help
+		Compile self-test code
+
+config FSL_BMAN_TEST_API
+	bool "High-level API self-test"
+	depends on FSL_BMAN_TEST
+	default y
+	help
+		This requires the presence of cpu-affine portals, and performs
+		high-level API testing with them (whichever portal(s) are affine
+		to the cpu(s) the test executes on).
+
+config FSL_BMAN_TEST_THRESH
+	bool "Thresholds self-test"
+	depends on FSL_BMAN_TEST
+	default y
+	help
+	  Multi-threaded (SMP) test of BMan pool depletion. A pool is seeded
+	  before multiple threads (one per cpu) create pool objects to track
+	  depletion state changes. The pool is then drained to empty by a
+	  "drainer" thread, and the other threads that they observe exactly
+	  the depletion state changes that are expected.
+
 config FSL_QMAN
 	bool "QMan device management"
 	default n

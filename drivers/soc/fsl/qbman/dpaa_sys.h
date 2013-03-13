@@ -37,6 +37,7 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/of_reserved_mem.h>
+#include <linux/kthread.h>
 #include <linux/platform_device.h>
 #include <linux/ctype.h>
 
