@@ -38,6 +38,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_reserved_mem.h>
 #include <linux/kthread.h>
+#include <linux/debugfs.h>
 #include <linux/platform_device.h>
 #include <linux/ctype.h>
 
@@ -76,9 +77,7 @@ int dpaa_resource_reserve(struct dpaa_resource *alloc, u32 base, u32 num);
 #define DPA_PORTAL_CE 0
 #define DPA_PORTAL_CI 1
 
-/***********************/
 /* Misc inline assists */
-/***********************/
 
 /* TODO: NB, we currently assume that hwsync() and lwsync() imply compiler
  * barriers and that dcb*() won't fall victim to compiler or execution
@@ -157,9 +156,7 @@ static inline void copy_words(void *dest, const void *src, size_t sz)
 #define copy_words memcpy
 #endif
 
-/************/
 /* RB-trees */
-/************/
 
 /* We encapsulate RB-trees so that its easier to use non-linux forms in
  * non-linux systems. This also encapsulates the extra plumbing that linux code
@@ -215,9 +212,7 @@ static inline type *name##_find(struct dpa_rbtree *tree, u32 val) \
 	return NULL; \
 }
 
-/************/
 /* Bootargs */
-/************/
 
 /* QMan has "qportals=" and BMan has "bportals=", they use the same syntax
  * though; a comma-separated list of items, each item being a cpu index and/or a

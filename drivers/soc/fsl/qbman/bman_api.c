@@ -1014,6 +1014,25 @@ int bman_flush_stockpile(struct bman_pool *pool, u32 flags)
 }
 EXPORT_SYMBOL(bman_flush_stockpile);
 
+int bman_query_pools(struct bm_pool_state *state)
+{
+	struct bman_portal *p = get_affine_portal();
+	struct bm_mc_result *mcr;
+	__maybe_unused unsigned long irqflags;
+
+	PORTAL_IRQ_LOCK(p, irqflags);
+	bm_mc_start(&p->p);
+	bm_mc_commit(&p->p, BM_MCC_VERB_CMD_QUERY);
+	while (!(mcr = bm_mc_result(&p->p)))
+		cpu_relax();
+	DPA_ASSERT((mcr->verb & BM_MCR_VERB_CMD_MASK) == BM_MCR_VERB_CMD_QUERY);
+	*state = mcr->query;
+	PORTAL_IRQ_UNLOCK(p, irqflags);
+	put_affine_portal();
+	return 0;
+}
+EXPORT_SYMBOL(bman_query_pools);
+
 #ifdef CONFIG_FSL_BMAN
 u32 bman_query_free_buffers(struct bman_pool *pool)
 {

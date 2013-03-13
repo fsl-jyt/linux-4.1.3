@@ -54,6 +54,13 @@ config FSL_BMAN_TEST_THRESH
 	  "drainer" thread, and the other threads that they observe exactly
 	  the depletion state changes that are expected.
 
+config FSL_BMAN_DEBUGFS
+	tristate "BMan debugfs support"
+	depends on DEBUG_FS
+	default n
+	help
+		BMan debugfs support
+
 config FSL_QMAN
 	bool "QMan device management"
 	default n
