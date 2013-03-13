@@ -540,7 +540,6 @@ static const struct of_device_id of_fsl_bman_ids[] = {
 	},
 	{}
 };
-MODULE_DEVICE_TABLE(of, of_fsl_bman_ids);
 
 static struct platform_driver of_fsl_bman_driver = {
 	.driver = {
@@ -551,4 +550,4 @@ static struct platform_driver of_fsl_bman_driver = {
 	.remove = of_fsl_bman_remove,
 };
 
-module_platform_driver(of_fsl_bman_driver);
+builtin_platform_driver(of_fsl_bman_driver);

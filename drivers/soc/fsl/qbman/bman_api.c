@@ -65,7 +65,11 @@ struct bman_portal {
 	u8 alloced;
 };
 
+
 #ifdef FSL_DPA_PORTAL_SHARE
+/* For an explanation of the locking, redirection, or affine-portal logic,
+ * please consult the QMan driver for details. This is the same, only simpler
+ * (no fiddly QMan-specific bits.) */
 #define PORTAL_IRQ_LOCK(p, irqflags) \
 	do { \
 		if ((p)->is_shared) \
@@ -173,7 +177,7 @@ static void depletion_unlink(struct bman_pool *pool)
 	PORTAL_IRQ_UNLOCK(pool->portal, irqflags);
 }
 
-/* In the case that the application's core loop calls
+/* In the case that the application's core loop calls qman_poll() and
  * bman_poll(), we ought to balance how often we incur the overheads of the
  * slow-path poll. We'll use two decrementer sources. The idle decrementer
  * constant is used when the last slow-poll detected no work to do, and the busy

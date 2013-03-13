@@ -157,10 +157,68 @@ static inline void copy_words(void *dest, const void *src, size_t sz)
 #endif
 
 /************/
+/* RB-trees */
+/************/
+
+/* We encapsulate RB-trees so that its easier to use non-linux forms in
+ * non-linux systems. This also encapsulates the extra plumbing that linux code
+ * usually provides when using RB-trees. This encapsulation assumes that the
+ * data type held by the tree is u32. */
+
+struct dpa_rbtree {
+	struct rb_root root;
+};
+#define DPA_RBTREE { .root = RB_ROOT }
+
+static inline void dpa_rbtree_init(struct dpa_rbtree *tree)
+{
+	tree->root = RB_ROOT;
+}
+
+#define IMPLEMENT_DPA_RBTREE(name, type, node_field, val_field) \
+static inline int name##_push(struct dpa_rbtree *tree, type *obj) \
+{ \
+	struct rb_node *parent = NULL, **p = &tree->root.rb_node; \
+	while (*p) { \
+		u32 item; \
+		parent = *p; \
+		item = rb_entry(parent, type, node_field)->val_field; \
+		if (obj->val_field < item) \
+			p = &parent->rb_left; \
+		else if (obj->val_field > item) \
+			p = &parent->rb_right; \
+		else \
+			return -EBUSY; \
+	} \
+	rb_link_node(&obj->node_field, parent, p); \
+	rb_insert_color(&obj->node_field, &tree->root); \
+	return 0; \
+} \
+static inline void name##_del(struct dpa_rbtree *tree, type *obj) \
+{ \
+	rb_erase(&obj->node_field, &tree->root); \
+} \
+static inline type *name##_find(struct dpa_rbtree *tree, u32 val) \
+{ \
+	type *ret; \
+	struct rb_node *p = tree->root.rb_node; \
+	while (p) { \
+		ret = rb_entry(p, type, node_field); \
+		if (val < ret->val_field) \
+			p = p->rb_left; \
+		else if (val > ret->val_field) \
+			p = p->rb_right; \
+		else \
+			return ret; \
+	} \
+	return NULL; \
+}
+
+/************/
 /* Bootargs */
 /************/
 
-/* BMan has "bportals=", they use the same syntax
+/* QMan has "qportals=" and BMan has "bportals=", they use the same syntax
  * though; a comma-separated list of items, each item being a cpu index and/or a
  * range of cpu indices, and each item optionally be prefixed by "s" to indicate
  * that the portal associated with that cpu should be shared. See bman_driver.c

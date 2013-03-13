@@ -17,15 +17,71 @@ config FSL_DPA_CHECKING
 		any use of it by other code. Not recommended for performance
 
 config FSL_BMAN
-	tristate "BMan device management"
+	bool "BMan device management"
 	default n
 	help
 		FSL DPAA BMan driver
 
 config FSL_BMAN_PORTAL
-	tristate "BMan portal(s)"
+	bool "BMan portal(s)"
 	default n
 	help
 		FSL BMan portal driver
+
+config FSL_QMAN
+	bool "QMan device management"
+	default n
+	help
+		FSL DPAA QMan driver
+
+if FSL_QMAN
+
+config FSL_QMAN_CONFIG
+	bool "QMan device management"
+	default y
+	help
+	  If this linux image is running natively, you need this option. If this
+	  linux image is running as a guest OS under the hypervisor, only one
+	  guest OS ("the control plane") needs this option.
+
+config FSL_QMAN_TEST
+	tristate "QMan self-tests"
+	default n
+	help
+		Compile self-test code for QMan.
+
+config FSL_QMAN_TEST_API
+	bool "QMan high-level self-test"
+	depends on FSL_QMAN_TEST
+	default y
+	help
+	  This requires the presence of cpu-affine portals, and performs
+	  high-level API testing with them (whichever portal(s) are affine to
+	  the cpu(s) the test executes on).
+
+config FSL_QMAN_TEST_STASH
+	bool "QMan 'hot potato' data-stashing self-test"
+	depends on FSL_QMAN_TEST
+	default y
+	help
+	  This performs a "hot potato" style test enqueuing/dequeuing a frame
+	  across a series of FQs scheduled to different portals (and cpus), with
+	  DQRR, data and context stashing always on.
+
+config FSL_QMAN_DEBUGFS
+	tristate "QMan debugfs support"
+	depends on DEBUG_FS
+	default n
+	help
+		QMan debugfs support
+
+config FSL_QMAN_INIT_TIMEOUT
+	int "timeout for qman init stage, in seconds"
+	default 10
+	help
+	The timeout setting to quit the initialization loop for non-control
+	partition in case the control partition fails to boot-up.
+
+endif # FSL_QMAN
 
 endif # FSL_DPA

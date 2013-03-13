@@ -28,7 +28,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if defined(CONFIG_FSL_BMAN_PORTAL) || defined(CONFIG_FSL_BMAN_PORTAL_MODULE)
+#if defined(CONFIG_FSL_BMAN_PORTAL) ||		\
+    defined(CONFIG_FSL_BMAN_PORTAL_MODULE) ||	\
+    defined(CONFIG_FSL_QMAN_PORTAL) ||		\
+    defined(CONFIG_FSL_QMAN_PORTAL_MODULE)
 #include "dpaa_sys.h"
 
 /* The allocator is a (possibly-empty) list of these */
@@ -353,4 +356,4 @@ u32 dpaa_resource_release(struct dpaa_resource *alloc,
 	return total_invalid;
 }
 EXPORT_SYMBOL(dpaa_resource_release);
-#endif	/* CONFIG_FSL_BMAN_PORTAL* */
+#endif	/* CONFIG_FSL_*MAN_PORTAL* */
