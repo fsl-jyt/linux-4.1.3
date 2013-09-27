@@ -43,6 +43,9 @@
 #include <linux/vmalloc.h>
 #include <linux/platform_device.h>
 #include <linux/ctype.h>
+#ifdef CONFIG_HOTPLUG_CPU
+#include <linux/cpu.h>
+#endif
 
 #include <asm/pgtable.h>
 
