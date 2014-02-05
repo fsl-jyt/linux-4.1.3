@@ -1,7 +1,7 @@
 /*
  * P1023 RDB Device Tree Source
  *
- * Copyright 2013 - 2014 Freescale Semiconductor Inc.
+ * Copyright 2013 - 2015 Freescale Semiconductor Inc.
  *
  * Author: Chunhe Lan <Chunhe.Lan@freescale.com>
  *
@@ -80,6 +80,28 @@
 		usb@22000 {
 			dr_mode = "host";
 			phy_type = "ulpi";
+		};
+
+		fman@100000 {
+			ethernet@e0000 {
+				phy-handle = <&phy0>;
+				phy-connection-type = "rgmii";
+			};
+
+			ethernet@e2000 {
+				phy-handle = <&phy1>;
+				phy-connection-type = "rgmii";
+			};
+
+			mdio@e1120 {
+				phy0: ethernet-phy@1 {
+					reg = <0x01>;
+				};
+
+				phy1: ethernet-phy@2 {
+					reg = <0x02>;
+				};
+			};
 		};
 	};
 
