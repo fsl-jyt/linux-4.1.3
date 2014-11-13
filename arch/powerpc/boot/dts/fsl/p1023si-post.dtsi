@@ -122,18 +122,21 @@
 		reg = <0x0 0x4000>, <0x100000 0x1000>;
 		interrupts = <29 2 0 0>;
 		cell-index = <0>;
+		fsl,qman-channel-id = <0>;
 	};
 	qportal1: qman-portal@4000 {
 		compatible = "fsl,qman-portal";
 		reg = <0x4000 0x4000>, <0x101000 0x1000>;
 		interrupts = <31 2 0 0>;
 		cell-index = <1>;
+		fsl,qman-channel-id = <1>;
 	};
 	qportal2: qman-portal@8000 {
 		compatible = "fsl,qman-portal";
 		reg = <0x8000 0x4000>, <0x102000 0x1000>;
 		interrupts = <33 2 0 0>;
 		cell-index = <2>;
+		fsl,qman-channel-id = <2>;
 	};
 };
 
