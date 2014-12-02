@@ -484,3 +484,4 @@
 };
 
 /include/ "fsl/p5040si-post.dtsi"
+/include/ "fsl/qoriq-dpaa-res1.dtsi"

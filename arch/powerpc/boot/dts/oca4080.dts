@@ -143,3 +143,4 @@
 };
 
 /include/ "fsl/p4080si-post.dtsi"
+/include/ "fsl/qoriq-dpaa-res1.dtsi"

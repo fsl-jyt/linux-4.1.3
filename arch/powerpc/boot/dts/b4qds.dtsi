@@ -277,3 +277,4 @@
 };
 
 /include/ "fsl/b4si-post.dtsi"
+/include/ "fsl/qoriq-dpaa-res3.dtsi"

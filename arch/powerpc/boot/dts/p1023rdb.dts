@@ -280,3 +280,4 @@
 };
 
 /include/ "fsl/p1023si-post.dtsi"
+/include/ "fsl/qoriq-dpaa-res2.dtsi"

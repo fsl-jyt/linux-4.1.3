@@ -358,3 +358,4 @@
 };
 
 /include/ "fsl/t4240si-post.dtsi"
+/include/ "fsl/qoriq-dpaa-res3.dtsi"
