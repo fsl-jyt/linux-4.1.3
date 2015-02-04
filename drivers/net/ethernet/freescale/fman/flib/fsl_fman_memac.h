@@ -373,6 +373,7 @@ struct memac_cfg {
 	bool tx_pbl_fwd;
 	bool debug_mode;
 	bool wake_on_lan;
+	bool fixed_link;
 	u16 max_frame_length;
 	u16 pause_quanta;
 	u32 tx_ipg_length;

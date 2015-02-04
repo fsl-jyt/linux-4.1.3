@@ -86,12 +86,38 @@ enum fm_inter_module_event {
 
 #define FM_LIODN_OFFSET_MASK    0x3FF
 
+/* Port Id defines */
+#define BASE_RX_PORTID			0x08
+#define BASE_TX_PORTID			0x28
+
+static inline u8 hw_port_id_to_sw_port_id(u8 major, u8 hw_port_id)
+{
+	u8 sw_port_id = 0;
+
+	if (hw_port_id >= BASE_TX_PORTID) {
+		sw_port_id = hw_port_id - BASE_TX_PORTID;
+	} else if (hw_port_id >= BASE_RX_PORTID) {
+		sw_port_id = hw_port_id - BASE_RX_PORTID;
+	} else {
+		sw_port_id = DUMMY_PORT_ID;
+		BUG_ON(false);
+	}
+
+	return sw_port_id;
+}
+
 #define BMI_MAX_FIFO_SIZE                   (FM_MURAM_SIZE)
 #define BMI_FIFO_UNITS                      0x100
 
 struct fm_intr_src_t {
 	void (*isr_cb)(void *src_arg);
 	void *src_handle;
+};
+
+/* enum for defining MAC types */
+enum fm_mac_type {
+	FM_MAC_10G = 0,	    /* 10G MAC */
+	FM_MAC_1G	    /* 1G MAC */
 };
 
 void fm_register_intr(struct fm_t *fm, enum fm_event_modules mod, u8 mod_id,
@@ -110,5 +136,8 @@ u16 fm_get_clock_freq(struct fm_t *fm);
 u8 fm_get_id(struct fm_t *fm);
 
 u32 fm_get_bmi_max_fifo_size(struct fm_t *fm);
+
+int fm_set_mac_max_frame(struct fm_t *fm, enum fm_mac_type type, u8 mac_id,
+			 u16 mtu);
 
 #endif /* __FM_COMMON_H */

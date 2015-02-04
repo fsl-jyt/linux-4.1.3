@@ -587,6 +587,47 @@ u8 fm_get_id(struct fm_t *fm)
 	return fm->fm_state->fm_id;
 }
 
+int fm_reset_mac(struct fm_t *fm, u8 mac_id)
+{
+	int err;
+	struct fman_fpm_regs __iomem *fpm_rg = fm->fpm_regs;
+
+	if (fm->fm_state->rev_info.major_rev >= 6) {
+		pr_warn("FMan MAC reset!\n");
+		return -EINVAL;
+	}
+	if (!fm->base_addr) {
+		pr_warn("'base_address' is required!\n");
+		return -EINVAL;
+	}
+	err = fman_reset_mac(fpm_rg, mac_id);
+
+	if (err == -EINVAL) {
+		pr_warn("Illegal MAC Id\n");
+		return -EINVAL;
+	} else if (err == EINVAL) {
+		return -EINVAL;
+	}
+	return 0;
+}
+
+int fm_set_mac_max_frame(struct fm_t *fm, enum fm_mac_type type,
+			 u8 mac_id, u16 mtu)
+{
+	/* if port is already initialized, check that MaxFrameLength is smaller
+	 * or equal to the port's max
+	 */
+	if ((!fm->fm_state->port_mfl[mac_id]) ||
+	    (fm->fm_state->port_mfl[mac_id] &&
+	    (mtu <= fm->fm_state->port_mfl[mac_id]))) {
+		fm->fm_state->mac_mfl[mac_id] = mtu;
+	} else {
+		pr_warn("MAC max_frame_length is larger than Port max_frame_length\n");
+		return -EINVAL;
+	}
+	return 0;
+}
+
 u16 fm_get_clock_freq(struct fm_t *fm)
 {
 	return fm->fm_state->fm_clk_freq;

@@ -164,6 +164,7 @@ struct fm_iram_regs_t {
 
 struct fm_state_struct_t {
 	u8 fm_id;
+	enum fm_port_type ports_types[FM_MAX_NUM_OF_HW_PORT_IDS];
 	u16 fm_clk_freq;
 	struct fm_revision_info_t rev_info;
 	bool enabled_time_stamp;
@@ -183,6 +184,8 @@ struct fm_state_struct_t {
 	u32 extra_fifo_pool_size;
 	u8 extra_tasks_pool_size;
 	u8 extra_open_dmas_pool_size;
+	u16 port_mfl[FM_MAX_NUM_OF_MACS];
+	u16 mac_mfl[FM_MAX_NUM_OF_MACS];
 };
 
 struct fm_intg_t {
