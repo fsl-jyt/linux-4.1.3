@@ -57,6 +57,9 @@
 #include "mac.h"
 #include "dpaa_eth.h"
 #include "dpaa_eth_common.h"
+#ifdef CONFIG_FSL_DPAA_ETH_DEBUGFS
+#include "dpaa_debugfs.h"
+#endif /* CONFIG_FSL_DPAA_ETH_DEBUGFS */
 
 #define DPA_NAPI_WEIGHT		64
 
@@ -809,6 +812,10 @@ static int __init dpa_load(void)
 
 	pr_info(DPA_DESCRIPTION "\n");
 
+#ifdef CONFIG_FSL_DPAA_ETH_DEBUGFS
+	dpa_debugfs_module_init();
+#endif /* CONFIG_FSL_DPAA_ETH_DEBUGFS */
+
 	/* initialise dpaa_eth mirror values */
 	dpa_rx_extra_headroom = fm_get_rx_extra_headroom();
 	dpa_max_frm = fm_get_max_frm();
@@ -824,6 +831,10 @@ module_init(dpa_load);
 static void __exit dpa_unload(void)
 {
 	platform_driver_unregister(&dpa_driver);
+
+#ifdef CONFIG_FSL_DPAA_ETH_DEBUGFS
+	dpa_debugfs_module_exit();
+#endif /* CONFIG_FSL_DPAA_ETH_DEBUGFS */
 
 	/* Only one channel is used and needs to be relased after all
 	 * interfaces are removed

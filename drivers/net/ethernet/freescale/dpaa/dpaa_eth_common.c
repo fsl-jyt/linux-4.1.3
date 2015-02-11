@@ -43,6 +43,9 @@
 #include <linux/if_vlan.h>
 #include "dpaa_eth.h"
 #include "dpaa_eth_common.h"
+#ifdef CONFIG_FSL_DPAA_ETH_DEBUGFS
+#include "dpaa_debugfs.h"
+#endif /* CONFIG_FSL_DPAA_ETH_DEBUGFS */
 #include "mac.h"
 
 /* Size in bytes of the FQ taildrop threshold */
@@ -94,6 +97,15 @@ int dpa_netdev_init(struct net_device *net_dev,
 		dev_err(dev, "register_netdev() = %d\n", err);
 		return err;
 	}
+
+#ifdef CONFIG_FSL_DPAA_ETH_DEBUGFS
+	/* create debugfs entry for this net_device */
+	err = dpa_netdev_debugfs_create(net_dev);
+	if (err) {
+		unregister_netdev(net_dev);
+		return err;
+	}
+#endif /* CONFIG_FSL_DPAA_ETH_DEBUGFS */
 
 	return 0;
 }
@@ -297,6 +309,11 @@ int dpa_remove(struct platform_device *pdev)
 
 	if (priv->buf_layout)
 		devm_kfree(dev, priv->buf_layout);
+
+#ifdef CONFIG_FSL_DPAA_ETH_DEBUGFS
+	/* remove debugfs entry for this net_device */
+	dpa_netdev_debugfs_remove(net_dev);
+#endif /* CONFIG_FSL_DPAA_ETH_DEBUGFS */
 
 	free_netdev(net_dev);
 
