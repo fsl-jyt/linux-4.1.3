@@ -344,6 +344,9 @@ static inline u16 dpa_get_headroom(struct dpa_buffer_layout_s *bl)
 	return bl->data_align ? ALIGN(headroom, bl->data_align) : headroom;
 }
 
+void dpaa_eth_sysfs_remove(struct device *dev);
+void dpaa_eth_sysfs_init(struct device *dev);
+
 void dpa_private_napi_del(struct net_device *net_dev);
 
 static inline void clear_fd(struct qm_fd *fd)

@@ -279,6 +279,8 @@ int dpa_remove(struct platform_device *pdev)
 
 	priv = netdev_priv(net_dev);
 
+	dpaa_eth_sysfs_remove(dev);
+
 	dev_set_drvdata(dev, NULL);
 	unregister_netdev(net_dev);
 

@@ -739,6 +739,8 @@ dpaa_eth_priv_probe(struct platform_device *pdev)
 	if (err < 0)
 		goto netdev_init_failed;
 
+	dpaa_eth_sysfs_init(&net_dev->dev);
+
 	pr_info("Probed interface %s\n", net_dev->name);
 
 	return 0;
