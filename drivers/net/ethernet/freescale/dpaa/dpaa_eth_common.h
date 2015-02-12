@@ -58,6 +58,9 @@
 /* used in napi related functions */
 extern u16 qman_portal_max;
 
+/* from dpa_ethtool.c */
+extern const struct ethtool_ops dpa_ethtool_ops;
+
 int dpa_netdev_init(struct net_device *net_dev,
 		    const u8 *mac_addr,
 		    u16 tx_timeout);
