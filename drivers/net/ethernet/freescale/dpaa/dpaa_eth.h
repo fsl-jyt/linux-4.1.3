@@ -36,6 +36,7 @@
 
 #include "fm_ext.h"
 #include "mac.h"
+#include "dpaa_eth_trace.h"
 
 extern int dpa_rx_extra_headroom;
 extern int dpa_max_frm;
@@ -416,6 +417,9 @@ static inline int dpa_xmit(struct dpa_priv_s *priv,
 		fd->cmd |= qman_fq_fqid(
 				_dpa_get_tx_conf_queue(priv, egress_fq)
 				);
+
+	/* Trace this Tx fd */
+	trace_dpa_tx_fd(priv->net_dev, egress_fq, fd);
 
 	for (i = 0; i < 100000; i++) {
 		err = qman_enqueue(egress_fq, fd, 0);
