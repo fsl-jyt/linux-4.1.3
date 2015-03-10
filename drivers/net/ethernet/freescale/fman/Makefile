@@ -5,3 +5,4 @@ obj-y		+= fsl_fman.o
 fsl_fman-objs	:= fman.o
 
 obj-y	+= port/
+obj-y	+= mac/

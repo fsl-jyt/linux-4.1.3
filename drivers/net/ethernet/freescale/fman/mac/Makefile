@@ -1,0 +1,5 @@
+obj-y	+= fsl_fman_mac.o
+
+fsl_fman_mac-objs		:= fman_dtsec.o fman_dtsec_mii_acc.o	\
+				   fman_memac.o fman_memac_mii_acc.o	\
+				   fman_tgec.o
