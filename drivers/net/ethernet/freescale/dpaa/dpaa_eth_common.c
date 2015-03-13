@@ -746,10 +746,15 @@ static void dpaa_eth_cgscn(struct qman_portal *qm, struct qman_cgr *cgr,
 	struct dpa_priv_s *priv = (struct dpa_priv_s *)container_of(cgr,
 		struct dpa_priv_s, cgr_data.cgr);
 
-	if (congested)
+	if (congested) {
+		priv->cgr_data.congestion_start_jiffies = jiffies;
 		netif_tx_stop_all_queues(priv->net_dev);
-	else
+		priv->cgr_data.cgr_congested_count++;
+	} else {
+		priv->cgr_data.congested_jiffies +=
+			(jiffies - priv->cgr_data.congestion_start_jiffies);
 		netif_tx_wake_all_queues(priv->net_dev);
+	}
 }
 
 int dpaa_eth_cgr_init(struct dpa_priv_s *priv)
@@ -1198,6 +1203,37 @@ dpa_fd_release(const struct net_device *net_dev, const struct qm_fd *fd)
 
 	while (bman_release(dpa_bp->pool, &bmb, 1, 0))
 		cpu_relax();
+}
+
+void count_ern(struct dpa_percpu_priv_s *percpu_priv,
+	       const struct qm_mr_entry *msg)
+{
+	switch (msg->ern.rc & QM_MR_RC_MASK) {
+	case QM_MR_RC_CGR_TAILDROP:
+		percpu_priv->ern_cnt.cg_tdrop++;
+		break;
+	case QM_MR_RC_WRED:
+		percpu_priv->ern_cnt.wred++;
+		break;
+	case QM_MR_RC_ERROR:
+		percpu_priv->ern_cnt.err_cond++;
+		break;
+	case QM_MR_RC_ORPWINDOW_EARLY:
+		percpu_priv->ern_cnt.early_window++;
+		break;
+	case QM_MR_RC_ORPWINDOW_LATE:
+		percpu_priv->ern_cnt.late_window++;
+		break;
+	case QM_MR_RC_FQ_TAILDROP:
+		percpu_priv->ern_cnt.fq_tdrop++;
+		break;
+	case QM_MR_RC_ORPWINDOW_RETIRED:
+		percpu_priv->ern_cnt.fq_retired++;
+		break;
+	case QM_MR_RC_ORP_ZERO:
+		percpu_priv->ern_cnt.orp_zero++;
+		break;
+	}
 }
 
 /* Turn on HW checksum computation for this outgoing frame.

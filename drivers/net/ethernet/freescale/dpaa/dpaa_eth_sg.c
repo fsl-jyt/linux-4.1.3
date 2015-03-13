@@ -671,6 +671,7 @@ int dpa_tx(struct sk_buff *skb, struct net_device *net_dev)
 	    likely(skb_shinfo(skb)->nr_frags < DPA_SGT_MAX_ENTRIES)) {
 		/* Just create a S/G fd based on the skb */
 		err = skb_to_sg_fd(priv, skb, &fd);
+		percpu_priv->tx_frag_skbuffs++;
 	} else {
 		/* If the egress skb contains more fragments than we support
 		 * we have no choice but to linearize it ourselves.
