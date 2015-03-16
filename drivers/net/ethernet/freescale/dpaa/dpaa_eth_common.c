@@ -1122,6 +1122,35 @@ void dpaa_eth_init_ports(struct mac_device *mac_dev,
 			      port_fqs->rx_defq, &buf_layout[RX]);
 }
 
+void dpa_release_sgt(struct qm_sg_entry *sgt)
+{
+	struct dpa_bp *dpa_bp;
+	struct bm_buffer bmb[DPA_BUFF_RELEASE_MAX];
+	u8 i = 0, j;
+
+	memset(bmb, 0, sizeof(bmb));
+
+	do {
+		dpa_bp = dpa_bpid2pool(sgt[i].bpid);
+		DPA_ERR_ON(!dpa_bp);
+
+		j = 0;
+		do {
+			DPA_ERR_ON(sgt[i].extension);
+
+			bmb[j].hi = sgt[i].addr_hi;
+			bmb[j].lo = sgt[i].addr_lo;
+
+			j++; i++;
+		} while (j < ARRAY_SIZE(bmb) &&
+				!sgt[i - 1].final &&
+				sgt[i - 1].bpid == sgt[i].bpid);
+
+		while (bman_release(dpa_bp->pool, bmb, j, 0))
+			cpu_relax();
+	} while (!sgt[i - 1].final);
+}
+
 void __attribute__((nonnull))
 dpa_fd_release(const struct net_device *net_dev, const struct qm_fd *fd)
 {
@@ -1137,7 +1166,23 @@ dpa_fd_release(const struct net_device *net_dev, const struct qm_fd *fd)
 	dpa_bp = dpa_bpid2pool(fd->bpid);
 	DPA_ERR_ON(!dpa_bp);
 
-	DPA_ERR_ON(fd->format == qm_fd_sg);
+	if (fd->format == qm_fd_sg) {
+		vaddr = phys_to_virt(fd->addr);
+		sgt = vaddr + dpa_fd_offset(fd);
+
+		dma_unmap_single(dpa_bp->dev, qm_fd_addr(fd), dpa_bp->size,
+				 DMA_BIDIRECTIONAL);
+
+		dpa_release_sgt(sgt);
+
+		addr = dma_map_single(dpa_bp->dev, vaddr, dpa_bp->size,
+				      DMA_BIDIRECTIONAL);
+		if (dma_mapping_error(dpa_bp->dev, addr)) {
+			dev_err(dpa_bp->dev, "DMA mapping failed");
+			return;
+		}
+		bm_buffer_set64(&bmb, addr);
+	}
 
 	while (bman_release(dpa_bp->pool, &bmb, 1, 0))
 		cpu_relax();

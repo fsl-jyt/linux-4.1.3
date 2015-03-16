@@ -460,6 +460,12 @@ static int dpa_private_netdev_init(struct net_device *net_dev)
 	net_dev->hw_features |= (NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
 		NETIF_F_LLTX);
 
+	/* Advertise S/G and HIGHDMA support for private interfaces */
+	net_dev->hw_features |= NETIF_F_SG | NETIF_F_HIGHDMA;
+	/* Recent kernels enable GSO automatically, if
+	 * we declare NETIF_F_SG. For conformity, we'll
+	 * still declare GSO explicitly.
+	 */
 	net_dev->features |= NETIF_F_GSO;
 
 	return dpa_netdev_init(net_dev, mac_addr, tx_timeout);

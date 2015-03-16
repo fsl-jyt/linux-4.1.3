@@ -52,6 +52,7 @@
 	fm_set_##type##_port_params(port, &param); \
 }
 
+#define DPA_SGT_MAX_ENTRIES 16 /* maximum number of entries in SG Table */
 #define DPA_BUFF_RELEASE_MAX 8 /* maximum number of buffers released at once */
 
 /* used in napi related functions */
@@ -109,6 +110,7 @@ void dpaa_eth_init_ports(struct mac_device *mac_dev,
 			 struct fm_port_fqs *port_fqs,
 			 struct dpa_buffer_layout_s *buf_layout,
 			 struct device *dev);
+void dpa_release_sgt(struct qm_sg_entry *sgt);
 void __attribute__((nonnull))
 dpa_fd_release(const struct net_device *net_dev, const struct qm_fd *fd);
 int dpa_enable_tx_csum(struct dpa_priv_s *priv,
