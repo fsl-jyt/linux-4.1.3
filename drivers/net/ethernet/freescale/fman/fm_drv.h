@@ -36,6 +36,7 @@
 #include <asm/mpc85xx.h>
 
 #include "fsl_fman_drv.h"
+#include "fm_port_ext.h"
 
 #ifndef CONFIG_FSL_FM_MAX_FRAME_SIZE
 #define CONFIG_FSL_FM_MAX_FRAME_SIZE 0
@@ -69,6 +70,7 @@ struct fm_port_drv_t {
 	phys_addr_t phys_base_addr;
 	void __iomem *base_addr;	/* Port's *virtual* address */
 	resource_size_t mem_size;
+	struct fm_port_params_t port_params;
 	struct fm_buffer_prefix_content_t buff_prefix_content;
 	struct fm_port_t *fm_port;
 	struct fm_drv_t *fm;

@@ -40,6 +40,40 @@
 /* FM device opaque structure used for type checking */
 struct fm;
 
+/* FMan Port structure .., */
+struct fm_port_t;
+
+/* A structure of information about each of the external
+ * buffer pools used by the port,
+ */
+struct fm_port_pool_param {
+	u8 id;			/* External buffer pool id */
+	u16 size;		/* External buffer pool buffer size */
+};
+
+/* structure for additional port parameters */
+struct fm_port_params {
+	u32 errq;	/* Error Queue Id. */
+	u32 defq;	/* For Tx and HC - Default Confirmation queue,
+			 * 0 means no Tx conf for processed frames.
+			 * For Rx and OP - default Rx queue.
+			 */
+	u8 num_pools;	/* Number of pools use by this port */
+	struct fm_port_pool_param pool_param[FM_PORT_MAX_NUM_OF_EXT_POOLS];
+	/* Parameters for each pool */
+	u16 priv_data_size;
+	/* Area that user may save for his own
+	 * need (E.g. save the SKB)
+	 */
+	bool parse_results;	/* Put the parser-results in the Rx/Tx buffer */
+	bool hash_results;	/* Put the hash-results in the Rx/Tx buffer */
+	bool time_stamp;	/* Put the time-stamp in the Rx/Tx buffer */
+	u16 data_align;
+	/* value for selecting a data alignment (must be a power of 2);
+	 * if write optimization is used, must be >= 16.
+	 */
+};
+
 /**
  * fm_bind
  * @fm_dev:	the OF handle of the FM device.
@@ -82,6 +116,76 @@ void *fm_get_handle(struct fm *fm);
  */
 
 struct resource *fm_get_mem_region(struct fm *fm);
+
+/**
+ * fm_port_bind
+ * @fm_port_dev:	The OF handle of the FM port device.
+ *
+ * Bind to a specific FM-port device (may be Rx or Tx port).
+ *
+ * Allowed only after the port was created.
+ *
+ * Return: A handle of the FM port device.
+ */
+struct fm_port_drv_t *fm_port_bind(struct device *fm_port_dev);
+
+/**
+ * fm_set_rx_port_params
+ * @port:	A handle of the FM port device.
+ * @params:	Rx port parameters
+ *
+ * Configure parameters for a specific Rx FM-port device.
+ *
+ * Allowed only after the port is binded.
+ */
+void fm_set_rx_port_params(struct fm_port_drv_t *port,
+			   struct fm_port_params *params);
+
+/**
+ * fm_port_get_buff_layout_ext_params
+ * @port:	A handle of the FM port device.
+ * @params:	PCD port parameters
+ *
+ * Get data_align from the device tree chosen node if applied.
+ * This function will only update these two parameters.
+ * When this port has no such parameters in the device tree
+ * values will be set to 0.
+ *
+ * Allowed only after the port is binded.
+ */
+void fm_port_get_buff_layout_ext_params(struct fm_port_drv_t *port,
+					struct fm_port_params *params);
+
+/**
+ * fm_get_tx_port_channel
+ * @port:	A handle of the FM port device.
+ *
+ * Get qman-channel number for this Tx port.
+ * Allowed only after the port is binded.
+ *
+ * Return: qman-channel number for this Tx port.
+ */
+int fm_get_tx_port_channel(struct fm_port_drv_t *port);
+
+/**
+ * fm_set_tx_port_params
+ * @port:	A handle of the FM port device.
+ * @params:	Tx port parameters
+ *
+ * Configure parameters for a specific Tx FM-port device
+ *
+ * Allowed only after the port is binded.
+ */
+void fm_set_tx_port_params(struct fm_port_drv_t *port,
+			   struct fm_port_params *params);
+/**
+ * fm_port_drv_handle
+ * @port:	A handle of the FM port device.
+ *
+ * Return: A pointer to the internal FM Port structure
+ */
+struct fm_port_t *fm_port_drv_handle(const struct fm_port_drv_t *port);
+
 /**
  * fm_get_max_frm
  *

@@ -144,6 +144,51 @@ static irqreturn_t fm_err_irq(int irq, void *fm_dev)
 	return IRQ_NONE;
 }
 
+static int fill_rest_fm_info(struct fm_drv_t *fm_drv)
+{
+#define FM_BMI_PPIDS_OFFSET                 0x00080304
+#define FM_DMA_PLR_OFFSET                   0x000c2060
+#define DMA_HIGH_LIODN_MASK                 0x0FFF0000
+#define DMA_LOW_LIODN_MASK                  0x00000FFF
+#define DMA_LIODN_SHIFT                     16
+
+	struct plr_t {
+		u32 plr[32];
+	};
+
+	struct ppids_t {
+		u32 fmbm_ppid[63];
+	};
+
+	struct plr_t *p_plr;
+	struct ppids_t __iomem *p_ppids;
+	int i;
+
+	p_plr = (struct plr_t *)(fm_drv->fm_base_addr + FM_DMA_PLR_OFFSET);
+
+	for (i = 0; i < FM_MAX_NUM_OF_PARTITIONS; i++) {
+		u16 liodn_base;
+
+		liodn_base = (u16)((i % 2) ?
+			      (p_plr->plr[i / 2] & DMA_LOW_LIODN_MASK) :
+			      ((p_plr->plr[i / 2] & DMA_HIGH_LIODN_MASK) >>
+			      DMA_LIODN_SHIFT));
+
+		if (((i >= FIRST_RX_PORT) && (i <= LAST_RX_PORT)) ||
+		    ((i >= FIRST_TX_PORT) && (i <= LAST_TX_PORT)))
+			fm_drv->ports[i].port_params.liodn_base = liodn_base;
+	}
+
+	p_ppids = (struct ppids_t __iomem *)
+		(fm_drv->fm_base_addr + FM_BMI_PPIDS_OFFSET);
+
+	for (i = FIRST_RX_PORT; i <= LAST_RX_PORT; i++)
+		fm_drv->ports[i].port_params.specific_params.rx_params.
+		liodn_offset = (u16)ioread32be(&p_ppids->fmbm_ppid[i - 1]);
+
+	return 0;
+}
+
 static int fill_qman_channels_info(struct fm_drv_t *fm_drv)
 {
 	fm_drv->qman_channels = kcalloc(fm_drv->num_of_qman_channels,
@@ -410,7 +455,7 @@ static int configure_fm_dev(struct fm_drv_t *fm_drv)
 	fm_drv->params.bus_error_cb = fm_drv_bus_error_cb;
 	fm_drv->params.dev_id = fm_drv;
 
-	return 0;
+	return fill_rest_fm_info(fm_drv);
 }
 
 static int init_fm_dev(struct fm_drv_t *fm_drv)
@@ -531,6 +576,31 @@ void *fm_get_handle(struct fm *fm)
 
 	return (void *)fm_drv->fm_dev;
 }
+
+struct fm_port_drv_t *fm_port_bind(struct device *fm_port_dev)
+{
+	return (struct fm_port_drv_t *)
+				(dev_get_drvdata(get_device(fm_port_dev)));
+}
+
+struct fm_port_t *fm_port_drv_handle(const struct fm_port_drv_t *port)
+{
+	return port->fm_port;
+}
+EXPORT_SYMBOL(fm_port_drv_handle);
+
+void fm_port_get_buff_layout_ext_params(struct fm_port_drv_t *port,
+					struct fm_port_params *params)
+{
+	params->data_align = 0;
+}
+EXPORT_SYMBOL(fm_port_get_buff_layout_ext_params);
+
+int fm_get_tx_port_channel(struct fm_port_drv_t *port)
+{
+	return port->tx_ch;
+}
+EXPORT_SYMBOL(fm_get_tx_port_channel);
 
 static const struct of_device_id fm_match[] = {
 	{

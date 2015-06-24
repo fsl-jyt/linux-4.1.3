@@ -120,6 +120,30 @@ enum fm_mac_type {
 	FM_MAC_1G	    /* 1G MAC */
 };
 
+/* Structure for port-FM communication
+ * during fm_port_init. Fields commented 'IN' are passed
+ * by the port module to be used by the FM module.
+ * Fields commented 'OUT' will be filled by FM before returning to port.
+ * Some fields are optional (depending on configuration) and
+ * will be analized by the port and FM modules accordingly.
+ */
+struct fm_inter_module_port_init_params_t {
+	u8 port_id;			/* IN. port Id */
+	enum fm_port_type port_type;	/* IN. Port type */
+	enum fm_port_speed port_speed;	/* IN. Port speed */
+	u16 liodn_offset;		/* IN. Port's requested resource */
+	u8 num_of_tasks;		/* IN. Port's requested resource */
+	u8 num_of_extra_tasks;		/* IN. Port's requested resource */
+	u8 num_of_open_dmas;		/* IN. Port's requested resource */
+	u8 num_of_extra_open_dmas;	/* IN. Port's requested resource */
+	u32 size_of_fifo;		/* IN. Port's requested resource */
+	u32 extra_size_of_fifo;		/* IN. Port's requested resource */
+	u8 deq_pipeline_depth;		/* IN. Port's requested resource */
+	u16 max_frame_length;		/* IN. Port's max frame length. */
+	u16 liodn_base;
+	/* LIODN base for this port, to be used together with LIODN offset. */
+};
+
 void fm_register_intr(struct fm_t *fm, enum fm_event_modules mod, u8 mod_id,
 		      enum fm_intr_type intr_type,
 		      void (*f_isr)(void *h_src_arg), void *h_src_arg);
@@ -134,6 +158,17 @@ int fm_reset_mac(struct fm_t *fm, u8 mac_id);
 u16 fm_get_clock_freq(struct fm_t *fm);
 
 u8 fm_get_id(struct fm_t *fm);
+
+int fm_get_set_port_params(struct fm_t *fm,
+			   struct fm_inter_module_port_init_params_t
+			   *port_params);
+
+int fm_set_num_of_open_dmas(struct fm_t *fm, u8 port_id, u8 *num_of_open_dmas,
+			    u8 *num_of_extra_open_dmas);
+int fm_set_num_of_tasks(struct fm_t *fm, u8 port_id, u8 *num_of_tasks,
+			u8 *num_of_extra_tasks);
+int fm_set_size_of_fifo(struct fm_t *fm, u8 port_id, u32 *size_of_fifo,
+			u32 *extra_size_of_fifo);
 
 u32 fm_get_bmi_max_fifo_size(struct fm_t *fm);
 

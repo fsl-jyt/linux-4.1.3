@@ -376,11 +376,29 @@ static void qmi_err_event(struct fm_t *fm)
 
 static void dma_err_event(struct fm_t *fm)
 {
-	u32 status;
+	u32 status, com_id;
+	u8 tnum, port_id, relative_port_id;
+	u16 liodn;
 	struct fman_dma_regs __iomem *dma_rg = fm->dma_regs;
 
 	status = fman_get_dma_err_event(dma_rg);
 
+	if (status & DMA_STATUS_BUS_ERR) {
+		com_id = fman_get_dma_com_id(dma_rg);
+		port_id = (u8)(((com_id & DMA_TRANSFER_PORTID_MASK) >>
+			       DMA_TRANSFER_PORTID_SHIFT));
+		relative_port_id =
+		hw_port_id_to_sw_port_id(fm->fm_state->rev_info.major_rev,
+					 port_id);
+		tnum = (u8)((com_id & DMA_TRANSFER_TNUM_MASK) >>
+			    DMA_TRANSFER_TNUM_SHIFT);
+		liodn = (u16)(com_id & DMA_TRANSFER_LIODN_MASK);
+		WARN_ON(fm->fm_state->ports_types[port_id] ==
+			FM_PORT_TYPE_DUMMY);
+		fm->bus_error_cb(fm->dev_id, fm->fm_state->ports_types[port_id],
+				 relative_port_id,
+				 fman_get_dma_addr(dma_rg), tnum, liodn);
+	}
 	if (status & DMA_STATUS_FM_SPDAT_ECC)
 		fm->exception_cb(fm->dev_id, FM_EX_DMA_SINGLE_PORT_ECC);
 	if (status & DMA_STATUS_READ_ECC)
@@ -587,6 +605,233 @@ u8 fm_get_id(struct fm_t *fm)
 	return fm->fm_state->fm_id;
 }
 
+int fm_get_set_port_params(struct fm_t *fm,
+			   struct fm_inter_module_port_init_params_t
+			   *port_params)
+{
+	int err;
+	unsigned long int_flags;
+	u8 port_id = port_params->port_id, mac_id;
+	struct fman_rg fman_rg;
+
+	fman_rg.bmi_rg = fm->bmi_regs;
+	fman_rg.qmi_rg = fm->qmi_regs;
+	fman_rg.fpm_rg = fm->fpm_regs;
+	fman_rg.dma_rg = fm->dma_regs;
+
+	spin_lock_irqsave(&fm->spinlock, int_flags);
+
+	fm->fm_state->ports_types[port_id] = port_params->port_type;
+
+	err = fm_set_num_of_tasks(fm, port_params->port_id,
+				  &port_params->num_of_tasks,
+				  &port_params->num_of_extra_tasks);
+	if (err) {
+		spin_unlock_irqrestore(&fm->spinlock, int_flags);
+		return err;
+	}
+
+	/* TX Ports */
+	if (port_params->port_type != FM_PORT_TYPE_RX) {
+		u32 enq_th;
+		u32 deq_th;
+
+		/* update qmi ENQ/DEQ threshold */
+		fm->fm_state->accumulated_num_of_deq_tnums +=
+			port_params->deq_pipeline_depth;
+		enq_th = fman_get_qmi_enq_th(fman_rg.qmi_rg);
+		/* if enq_th is too big, we reduce it to the max value
+		 * that is still 0
+		 */
+		if (enq_th >= (fm->intg->qmi_max_num_of_tnums -
+		    fm->fm_state->accumulated_num_of_deq_tnums)) {
+			enq_th =
+			fm->intg->qmi_max_num_of_tnums -
+			fm->fm_state->accumulated_num_of_deq_tnums - 1;
+			fman_set_qmi_enq_th(fman_rg.qmi_rg, enq_th);
+		}
+
+		deq_th = fman_get_qmi_deq_th(fman_rg.qmi_rg);
+		/* if deq_th is too small, we enlarge it to the min
+		 * value that is still 0.
+		 * depTh may not be larger than 63
+		 * (fm->intg->qmi_max_num_of_tnums-1).
+		 */
+		if ((deq_th <= fm->fm_state->accumulated_num_of_deq_tnums) &&
+		    (deq_th < fm->intg->qmi_max_num_of_tnums - 1)) {
+				deq_th =
+				fm->fm_state->accumulated_num_of_deq_tnums + 1;
+			fman_set_qmi_deq_th(fman_rg.qmi_rg, deq_th);
+		}
+	}
+
+	err = fm_set_size_of_fifo(fm, port_params->port_id,
+				  &port_params->size_of_fifo,
+				  &port_params->extra_size_of_fifo);
+	if (err) {
+		spin_unlock_irqrestore(&fm->spinlock, int_flags);
+		return err;
+	}
+
+	err = fm_set_num_of_open_dmas(fm, port_params->port_id,
+				      &port_params->num_of_open_dmas,
+				      &port_params->num_of_extra_open_dmas);
+	if (err) {
+		spin_unlock_irqrestore(&fm->spinlock, int_flags);
+		return err;
+	}
+
+	fman_set_liodn_per_port(&fman_rg, port_id, port_params->liodn_base,
+				port_params->liodn_offset);
+
+	if (fm->fm_state->rev_info.major_rev < 6)
+		fman_set_order_restoration_per_port(fman_rg.fpm_rg,
+						    port_id,
+						    !!((port_params->
+							 port_type ==
+							 FM_PORT_TYPE_RX)));
+
+	mac_id = hw_port_id_to_sw_port_id(fm->fm_state->rev_info.
+					  major_rev,
+					  port_id);
+
+	if (port_params->max_frame_length >= fm->fm_state->mac_mfl[mac_id]) {
+		fm->fm_state->port_mfl[mac_id] = port_params->max_frame_length;
+	} else {
+		pr_warn("Port max_frame_length is smaller than MAC current MTU\n");
+		spin_unlock_irqrestore(&fm->spinlock, int_flags);
+		return -EINVAL;
+	}
+
+	spin_unlock_irqrestore(&fm->spinlock, int_flags);
+
+	return 0;
+}
+
+int fm_set_size_of_fifo(struct fm_t *fm, u8 port_id, u32 *size_of_fifo,
+			u32 *extra_size_of_fifo)
+{
+	struct fman_bmi_regs __iomem *bmi_rg = fm->bmi_regs;
+	u32 fifo = *size_of_fifo;
+	u32 extra_fifo = *extra_size_of_fifo;
+
+	/* if this is the first time a port requires extra_fifo_pool_size,
+	 * the total extra_fifo_pool_size must be initialized to 1 buffer per
+	 * port
+	 */
+	if (extra_fifo && !fm->fm_state->extra_fifo_pool_size)
+		fm->fm_state->extra_fifo_pool_size =
+			fm->intg->num_of_rx_ports * BMI_FIFO_UNITS;
+
+	fm->fm_state->extra_fifo_pool_size =
+		max(fm->fm_state->extra_fifo_pool_size, extra_fifo);
+
+	/* check that there are enough uncommitted fifo size */
+	if ((fm->fm_state->accumulated_fifo_size + fifo) >
+	    (fm->fm_state->total_fifo_size -
+	    fm->fm_state->extra_fifo_pool_size)) {
+		pr_err("Requested fifo size and extra size exceed total FIFO size.\n");
+		return -EAGAIN;
+	}
+	/* update accumulated */
+	fm->fm_state->accumulated_fifo_size += fifo;
+	fman_set_size_of_fifo(bmi_rg, port_id, fifo, extra_fifo);
+
+	return 0;
+}
+
+int fm_set_num_of_tasks(struct fm_t *fm, u8 port_id, u8 *num_of_tasks,
+			u8 *num_of_extra_tasks)
+{
+	struct fman_bmi_regs __iomem *bmi_rg = fm->bmi_regs;
+	u8 tasks = *num_of_tasks;
+	u8 extra_tasks = *num_of_extra_tasks;
+
+	if (extra_tasks)
+		fm->fm_state->extra_tasks_pool_size =
+		(u8)max(fm->fm_state->extra_tasks_pool_size, extra_tasks);
+
+	/* check that there are enough uncommitted tasks */
+	if ((fm->fm_state->accumulated_num_of_tasks + tasks) >
+	    (fm->fm_state->total_num_of_tasks -
+	     fm->fm_state->extra_tasks_pool_size)) {
+		pr_err("Requested num_of_tasks and extra tasks pool for fm%d exceed total num_of_tasks.\n",
+		       fm->fm_state->fm_id);
+		return -EAGAIN;
+	}
+	/* update accumulated */
+	fm->fm_state->accumulated_num_of_tasks += tasks;
+	fman_set_num_of_tasks(bmi_rg, port_id, tasks, extra_tasks);
+
+	return 0;
+}
+
+int fm_set_num_of_open_dmas(struct fm_t *fm, u8 port_id, u8 *num_of_open_dmas,
+			    u8 *num_of_extra_open_dmas)
+{
+	struct fman_bmi_regs __iomem *bmi_rg = fm->bmi_regs;
+	u8 open_dmas = *num_of_open_dmas;
+	u8 extra_open_dmas = *num_of_extra_open_dmas;
+	u8 total_num_dmas = 0, current_val = 0, current_extra_val = 0;
+
+	if (!open_dmas) {
+		/* !open_dmas - first configuration according
+		 * to values in regs.- read the current number of
+		 * open Dma's
+		 */
+		current_extra_val = fman_get_num_extra_dmas(bmi_rg, port_id);
+		current_val = fman_get_num_of_dmas(bmi_rg, port_id);
+		/* This is the first configuration and user did not
+		 * specify value (!open_dmas), reset values will be used
+		 * and we just save these values for resource management
+		 */
+		fm->fm_state->extra_open_dmas_pool_size =
+			(u8)max(fm->fm_state->extra_open_dmas_pool_size,
+				current_extra_val);
+		fm->fm_state->accumulated_num_of_open_dmas += current_val;
+		*num_of_open_dmas = current_val;
+		*num_of_extra_open_dmas = current_extra_val;
+		return 0;
+	}
+
+	if (extra_open_dmas > current_extra_val)
+		fm->fm_state->extra_open_dmas_pool_size =
+		    (u8)max(fm->fm_state->extra_open_dmas_pool_size,
+			    extra_open_dmas);
+
+	if ((fm->fm_state->rev_info.major_rev < 6) &&
+	    (fm->fm_state->accumulated_num_of_open_dmas - current_val +
+	     open_dmas > fm->fm_state->max_num_of_open_dmas)) {
+		pr_err("Requested num_of_open_dmas for fm%d exceeds total num_of_open_dmas.\n",
+		       fm->fm_state->fm_id);
+		return -EAGAIN;
+	} else if ((fm->fm_state->rev_info.major_rev >= 6) &&
+		   !((fm->fm_state->rev_info.major_rev == 6) &&
+		   (fm->fm_state->rev_info.minor_rev == 0)) &&
+		   (fm->fm_state->accumulated_num_of_open_dmas -
+		   current_val + open_dmas >
+		   fm->intg->dma_thresh_max_commq + 1)) {
+		pr_err("Requested num_of_open_dmas for fm%d exceeds DMA Command queue (%d)\n",
+		       fm->fm_state->fm_id, fm->intg->dma_thresh_max_commq + 1);
+		return -EAGAIN;
+	}
+
+	WARN_ON(fm->fm_state->accumulated_num_of_open_dmas < current_val);
+	/* update acummulated */
+	fm->fm_state->accumulated_num_of_open_dmas -= current_val;
+	fm->fm_state->accumulated_num_of_open_dmas += open_dmas;
+
+	if (fm->fm_state->rev_info.major_rev < 6)
+		total_num_dmas =
+		    (u8)(fm->fm_state->accumulated_num_of_open_dmas +
+		    fm->fm_state->extra_open_dmas_pool_size);
+
+	fman_set_num_of_open_dmas(bmi_rg, port_id, open_dmas,
+				  extra_open_dmas, total_num_dmas);
+
+	return 0;
+}
+
 int fm_reset_mac(struct fm_t *fm, u8 mac_id)
 {
 	int err;
@@ -690,6 +935,7 @@ static int init_fm_dma(struct fm_t *fm)
 void *fm_config(struct fm_params_t *fm_param)
 {
 	struct fm_t *fm;
+	u8 i;
 	void __iomem *base_addr;
 
 	base_addr = fm_param->base_addr;
@@ -705,6 +951,9 @@ void *fm_config(struct fm_params_t *fm_param)
 
 	/* Initialize FM parameters which will be kept by the driver */
 	fm->fm_state->fm_id = fm_param->fm_id;
+
+	for (i = 0; i < FM_MAX_NUM_OF_HW_PORT_IDS; i++)
+		fm->fm_state->ports_types[i] = FM_PORT_TYPE_DUMMY;
 
 	/* Allocate the FM driver's parameters structure */
 	fm->fm_drv_param = kzalloc(sizeof(*fm->fm_drv_param), GFP_KERNEL);
