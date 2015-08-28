@@ -1,0 +1,5 @@
+menu "Freescale SOC (System On Chip) specific Drivers"
+
+source "drivers/soc/fsl/qbman/Kconfig"
+
+endmenu

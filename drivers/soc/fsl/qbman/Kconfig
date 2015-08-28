@@ -1,0 +1,25 @@
+menuconfig FSL_DPA
+	bool "Freescale DPAA support"
+	depends on FSL_SOC || COMPILE_TEST
+	default n
+	help
+		FSL Data-Path Acceleration Architecture drivers
+
+		These are not the actual Ethernet driver(s)
+
+if FSL_DPA
+
+config FSL_DPA_CHECKING
+	bool "additional driver checking"
+	default n
+	help
+		Compiles in additional checks to sanity-check the drivers and
+		any use of it by other code. Not recommended for performance
+
+config FSL_BMAN
+	tristate "BMan device management"
+	default n
+	help
+		FSL DPAA BMan driver
+
+endif # FSL_DPA
