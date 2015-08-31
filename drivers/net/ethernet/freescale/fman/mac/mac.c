@@ -442,4 +442,4 @@ static struct platform_driver mac_driver = {
 	.probe		= mac_probe,
 };
 
-builtin_platform_driver(mac_driver);
+module_platform_driver(mac_driver);

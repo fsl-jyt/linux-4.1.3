@@ -1021,6 +1021,6 @@ static struct platform_driver of_fsl_qman_driver = {
 	.remove	= of_fsl_qman_remove,
 };
 
-builtin_platform_driver(of_fsl_qman_driver);
+module_platform_driver(of_fsl_qman_driver);
 
 #endif /* CONFIG_SYSFS */

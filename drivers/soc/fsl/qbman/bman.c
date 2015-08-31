@@ -550,4 +550,4 @@ static struct platform_driver of_fsl_bman_driver = {
 	.remove = of_fsl_bman_remove,
 };
 
-builtin_platform_driver(of_fsl_bman_driver);
+module_platform_driver(of_fsl_bman_driver);

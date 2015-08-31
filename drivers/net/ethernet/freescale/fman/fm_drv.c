@@ -618,4 +618,4 @@ static struct platform_driver fm_driver = {
 	.probe = fm_probe,
 };
 
-builtin_platform_driver(fm_driver);
+module_platform_driver(fm_driver);
