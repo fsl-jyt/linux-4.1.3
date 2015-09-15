@@ -69,9 +69,46 @@
 			#size-cells = <1>;
 			compatible = "cfi-flash";
 			reg = <0x0 0x0 0x8000000>;
-
 			bank-width = <2>;
 			device-width = <1>;
+
+			partition@0 {
+				/* SoC RCW, this location must not be altered  */
+				reg = <0x0 0x00020000>;
+				label = "rcw (RO)";
+				read-only;
+			};
+
+			partition@1 {
+				/* maximum 12.87MB ONIE image */
+				reg = <0x00020000 0x00ce0000>;
+				label = "onie image";
+			};
+
+			partition@2 {
+				/* 50MB available for apps */
+				reg = <0x00d00000 0x03200000>;
+				label = "open";
+			};
+
+			partition@3 {
+				/* FMan ucode, 128KB, 1 sector */
+				reg = <0x07f00000 0x00020000>;
+				label = "fman-ucode";
+			};
+
+			partition@4 {
+				/* U-Boot environment varialbes, 128KB */
+				reg = <0x07f20000 0x00020000>;
+				label = "uboot-env";
+				env_size = <0x2000>;
+			};
+
+			partition@5 {
+				/* 768KB u-boot */
+				reg = <0x07f40000 0x000c0000>;
+				label = "uboot";
+			};
 		};
 
 		nand@1,0 {
