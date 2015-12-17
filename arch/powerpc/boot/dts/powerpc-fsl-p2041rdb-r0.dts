@@ -245,11 +245,13 @@
 		ranges = <0 0 0xf 0xe8000000 0x08000000
 			  1 0 0xf 0xffa00000 0x00040000>;
 
-		flash@0,0 {
+		nor@0,0 {
+			#address-cells = <1>;
+			#size-cells = <1>;
 			compatible = "cfi-flash";
 			reg = <0 0 0x08000000>;
 			bank-width = <2>;
-			device-width = <2>;
+			device-width = <1>;
 
 			partition@0 {
 				/* SoC RCW, this location must not be altered  */
@@ -258,7 +260,7 @@
 				read-only;
 			};
 
-			partition@020000 {
+			partition@20000 {
 				/* maximum 12.87MB ONIE image */
 				reg = <0x00020000 0x00ce0000>;
 				label = "onie image";
@@ -289,7 +291,7 @@
 				label = "uboot";
 			};
 		};
-
+/*
 		nand@1,0 {
 			#address-cells = <1>;
 			#size-cells = <1>;
@@ -326,7 +328,7 @@
 				label = "NAND Writable User area";
 				reg = <0x1f000000 0x01000000>;
 			};
-		};
+		};*/
 	};
 
 	pci0: pcie@ffe200000 {
